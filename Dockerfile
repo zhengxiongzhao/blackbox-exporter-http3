@@ -1,6 +1,6 @@
 ARG BLACKBOX_EXPORTER_VERSION=v0.26.0
 
-FROM alpine:3.19 AS builder
+FROM debian:buster-slim AS builder
 
 # Install curl with HTTP/3 support.
 # The default curl package in Alpine 3.19 should be sufficient.

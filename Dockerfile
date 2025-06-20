@@ -4,7 +4,7 @@ FROM debian:buster-slim AS builder
 
 # Install curl with HTTP/3 support.
 # The default curl package in Alpine 3.19 should be sufficient.
-RUN apk update && apk add --no-cache curl
+RUN apt-get update && apt-get install -y --no-install-recommends curl
 
 # Use the official blackbox-exporter image
 FROM prom/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}

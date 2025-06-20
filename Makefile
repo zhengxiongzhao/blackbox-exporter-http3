@@ -13,7 +13,6 @@
 
 # Needs to be defined before including Makefile.common to auto-generate targets
 DOCKER_ARCHS ?= amd64 armv7 arm64 ppc64le
-DOCKER_REPO ?= $(shell echo "DOCKERHUB_USERNAME" | tr '[:upper:]' '[:lower:]')
 
 include Makefile.common
 

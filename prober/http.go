@@ -40,6 +40,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	pconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/version"
+	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/prometheus/blackbox_exporter/config"
@@ -421,11 +422,38 @@ func ProbeHTTP(ctx context.Context, target string, module config.Module, registr
 		return false
 	}
 
-	httpClientConfig.TLSConfig.ServerName = ""
-	noServerName, err := pconfig.NewRoundTripperFromConfig(httpClientConfig, "http_probe", pconfig.WithKeepAlivesDisabled())
-	if err != nil {
-		logger.Error("Error generating HTTP client without ServerName", "err", err)
-		return false
+	var noServerName http.RoundTripper
+	if httpConfig.EnableHTTP3 {
+		tlsConfig, err := pconfig.NewTLSConfig(&httpClientConfig.TLSConfig)
+		if err != nil {
+			logger.Error("Error generating TLS config for HTTP/3", "err", err)
+			return false
+		}
+		// Replace the default transport with the HTTP/3 transport.
+		// Note: This will ignore proxy settings from the config for HTTP/3 probes.
+		client.Transport = &http3.RoundTripper{
+			TLSClientConfig: tlsConfig,
+		}
+
+		// Create a new TLS config for the no-servername case.
+		noServerNameTLSConfig := httpClientConfig.TLSConfig
+		noServerNameTLSConfig.ServerName = ""
+		tlsConfig2, err := pconfig.NewTLSConfig(&noServerNameTLSConfig)
+		if err != nil {
+			logger.Error("Error generating TLS config for HTTP/3 without ServerName", "err", err)
+			return false
+		}
+		noServerName = &http3.RoundTripper{
+			TLSClientConfig: tlsConfig2,
+		}
+	} else {
+		// Original logic for non-http3 case
+		httpClientConfig.TLSConfig.ServerName = ""
+		noServerName, err = pconfig.NewRoundTripperFromConfig(httpClientConfig, "http_probe", pconfig.WithKeepAlivesDisabled())
+		if err != nil {
+			logger.Error("Error generating HTTP client without ServerName", "err", err)
+			return false
+		}
 	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})

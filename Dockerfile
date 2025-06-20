@@ -5,6 +5,7 @@ FROM alpine:3.19 AS builder
 RUN apk update && apk add --no-cache curl
 
 # Use the official blackbox-exporter image
+ARG BLACKBOX_EXPORTER_VERSION
 FROM prom/blackbox-exporter:${BLACKBOX_EXPORTER_VERSION}
 
 # Copy the curl binary from the builder stage
